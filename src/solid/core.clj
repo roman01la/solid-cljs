@@ -87,7 +87,7 @@
   (let [[attrs & children] args]
     (if (map? attrs)
       (let [attrs (-> attrs
-                      (update :style to-js)
+                      (update :style #(if (map? %) (to-js %) `(solid.core/interpret-style-map ~%)))
                       compile-directives
                       compile-class
                       camel-case-keys

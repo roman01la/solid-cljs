@@ -3,8 +3,14 @@
     [clojure.string :as str]
     [solid.core :as s :refer [$ defui]]))
 
-(defui button [{:keys [on-click children]}]
-  ($ :button {:on-click on-click}
+(defui button [{:keys [style children on-click] :as m}]
+  ($ :button
+     {:on-click on-click
+      :style (merge {:border :none
+                     :border-radius 0
+                     :color "#fafafa"
+                     :font-size 22}
+                    style)}
      children))
 
 (defui tool-bar []
@@ -45,7 +51,28 @@
         pick (fn []
                (if @op
                  pvalue
-                 value))]
+                 value))
+        on-click (fn [v]
+                   (cond
+                     (number? v) (swap! (pick) conj v)
+                     (= "," v) (swap! (pick) conj v)
+                     (= "AC" v) (do (reset! value [])
+                                    (reset! pvalue [])
+                                    (reset! op nil))
+                     (= "+-" v) (swap! (pick) update 0 -)
+                     (= "=" v) (do (reset! value (case @op
+                                                   "/" (exe / @value @pvalue)
+                                                   "*" (exe * @value @pvalue)
+                                                   "-" (exe - @value @pvalue)
+                                                   "+" (exe + @value @pvalue)))
+                                   (reset! pvalue [])
+                                   (reset! op nil))
+                     (= "%" v) (do (reset! value (exe (fn [a b]
+                                                        (* (/ a 100) b))
+                                                      @value @pvalue))
+                                   (reset! pvalue [])
+                                   (reset! op nil))
+                     (#{"/" "*" "-" "+"} v) (reset! op v)))]
     ($ :div {:style {:width 240
                      :height 320
                      :box-shadow "0px 1px 6px rgba(0, 0, 0, 0.3)"
@@ -70,36 +97,12 @@
                         :gap 1
                         :background-color "#6c6058"}}
           (s/for [[v idx] buttons]
-            ($ :button {:on-click (fn []
-                                    (cond
-                                      (number? v) (swap! (pick) conj v)
-                                      (= "," v) (swap! (pick) conj v)
-                                      (= "AC" v) (do (reset! value [])
-                                                     (reset! pvalue [])
-                                                     (reset! op nil))
-                                      (= "+-" v) (swap! (pick) update 0 -)
-                                      (= "=" v) (do (reset! value (case @op
-                                                                    "/" (exe / @value @pvalue)
-                                                                    "*" (exe * @value @pvalue)
-                                                                    "-" (exe - @value @pvalue)
-                                                                    "+" (exe + @value @pvalue)))
-                                                    (reset! pvalue [])
-                                                    (reset! op nil))
-                                      (= "%" v) (do (reset! value (exe (fn [a b]
-                                                                         (* (/ a 100) b))
-                                                                       @value @pvalue))
-                                                    (reset! pvalue [])
-                                                    (reset! op nil))
-                                      (#{"/" "*" "-" "+"} v) (reset! op v)))
-                        :style {:grid-column (when (= v 0) "span 2")
-                                :border :none
-                                :border-radius 0
-                                :background-color (cond
-                                                    (#{"AC" "+-" "%"} v) "#84827d"
-                                                    (#{"," 0 1 2 3 4 5 6 7 8 9} v) "#afaea9"
-                                                    (#{"/" "*" "-" "+" "="} v) "#f39c11")
-                                :color "#fafafa"
-                                :font-size 22}}
+            ($ button {:on-click #(on-click v)
+                       :style {:grid-column (when (= v 0) "span 2")
+                               :background-color (cond
+                                                   (#{"AC" "+-" "%"} v) "#84827d"
+                                                   (#{"," 0 1 2 3 4 5 6 7 8 9} v) "#afaea9"
+                                                   (#{"/" "*" "-" "+" "="} v) "#f39c11")}}
                v))))))
 
 (defui app []

@@ -3,7 +3,8 @@
   (:require ["solid-js" :as solid]
             ["solid-js/web" :as sw]
             ["solid-js/h" :as h]
-            [cljs-bean.core :as bean]))
+            [cljs-bean.core :as bean]
+            [clojure.string :as str]))
 
 (def unit-less-css-props
   #{"animationIterationCount" "aspectRatio","borderImageOutset","borderImageSlice",
@@ -165,3 +166,61 @@
   solid/DEV)
 
 
+
+
+(def ^:private cc-regexp (js/RegExp. "-(\\w)" "g"))
+
+(defn- cc-fn [s]
+  (str/upper-case (aget s 1)))
+
+(defn- ^string dash-to-camel [^string name-str]
+  (if (or (str/starts-with? name-str "aria-")
+          (str/starts-with? name-str "data-"))
+    name-str
+    (.replace name-str cc-regexp cc-fn)))
+
+(defonce prop-name-cache #js {})
+
+(defn- cached-prop-name [k f]
+  (if (keyword? k)
+    (let [name-str (-name ^not-native k)]
+      (if-some [k' (aget prop-name-cache name-str)]
+        k'
+        (let [v (f name-str)]
+          (aset prop-name-cache name-str v)
+          v)))
+    k))
+
+(declare convert-prop-value)
+
+(defn- kv-conv [o k v]
+  (aset o (cached-prop-name k dash-to-camel) (convert-prop-value v))
+  o)
+
+(defn- kv-style-conv [o k v]
+  (aset o (cached-prop-name k name) (convert-prop-value v))
+  o)
+
+(defn- js-val? [x]
+  (not (identical? "object" (goog/typeOf x))))
+
+(defn- convert-prop-value [x]
+  (cond
+    (js-val? x) x
+    (keyword? x) (-name ^not-native x)
+    (map? x) (reduce-kv kv-conv #js {} x)
+    (coll? x) (clj->js x)
+    (ifn? x) #(apply x %&)
+    :else (clj->js x)))
+
+(defn- convert-style-prop-value [x]
+  (cond
+    (js-val? x) x
+    (keyword? x) (-name ^not-native x)
+    (map? x) (reduce-kv kv-style-conv #js {} x)
+    (coll? x) (clj->js x)
+    (ifn? x) #(apply x %&)
+    :else (clj->js x)))
+
+(defn interpret-style-map [m]
+  (convert-style-prop-value m))
