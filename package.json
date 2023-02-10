@@ -1,0 +1,9 @@
+{
+  "name": "solid-cljs",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "dependencies": {
+    "solid-js": "^1.6.10"
+  }
+}
