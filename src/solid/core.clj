@@ -117,6 +117,9 @@
 (defmacro on-cleanup [& body]
   `(-on-cleanup (fn [] ~@body)))
 
+(defmacro on-error [args & body]
+  `(-on-cleanup (fn ~args ~@body)))
+
 (defmacro memo [& body]
   `(-memo (fn [] ~@body)))
 

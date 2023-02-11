@@ -2,6 +2,7 @@
   (:require-macros [solid.core])
   (:require ["solid-js" :as solid]
             ["solid-js/web" :as sw]
+            ["solid-js/store" :as store]
             ["solid-js/h" :as h]
             [cljs-bean.core :as bean]
             [clojure.string :as str]))
@@ -37,24 +38,27 @@
     (-deref [this]
       (value))))
 
-(defn signal [v]
-  (let [[value set-value] (solid/createSignal v)]
-    (reify
-      IDeref
-      (-deref [this]
-        (value))
-      IReset
-      (-reset! [this v]
-        (set-value v))
-      ISwap
-      (-swap! [this f]
-        (-reset! this (f (value))))
-      (-swap! [this f a]
-        (-reset! this (f (value) a)))
-      (-swap! [this f a b]
-        (-reset! this (f (value) a b)))
-      (-swap! [this f a b xs]
-        (-reset! this (apply f (value) a b xs))))))
+(defn signal
+  ([v]
+   (signal v nil))
+  ([v {:keys [equals]}]
+   (let [[value set-value] (solid/createSignal v #js {:equals equals})]
+     (reify
+       IDeref
+       (-deref [this]
+         (value))
+       IReset
+       (-reset! [this v]
+         (set-value v))
+       ISwap
+       (-swap! [this f]
+         (-reset! this (f (value))))
+       (-swap! [this f a]
+         (-reset! this (f (value) a)))
+       (-swap! [this f a b]
+         (-reset! this (f (value) a b)))
+       (-swap! [this f a b xs]
+         (-reset! this (apply f (value) a b xs)))))))
 
 (defn ref []
   (let [value (volatile! nil)
@@ -126,15 +130,28 @@
 (defn -reaction [f]
   (solid/createReaction f))
 
+(defn store [v]
+  (store/createStore v))
+
 (def uid solid/createUniqueId)
 
 (def portal sw/Portal)
 
 (def error-boundary solid/ErrorBoundary)
 
-(def untrack solid/untrack)
+(defn untrack [f]
+  (solid/untrack f))
 
-(def resource solid/createResource)
+(defn resource
+  ([f]
+   (resource f nil))
+  ([f {:keys [initial-value name defer-stream? ssr-load-from storage on-hydrated] :as opts}]
+   (solid/createResource f #js {:initialValue initial-value
+                                :name name
+                                :deferStream defer-stream?
+                                :ssrLoadFrom ssr-load-from
+                                :storage storage
+                                :onHydrated on-hydrated})))
 
 (defn render [el node]
   (sw/render (constantly el) node))
