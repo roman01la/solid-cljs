@@ -79,9 +79,18 @@
 (defmacro children [& expr]
   `(-children (fn [] ~@expr)))
 
-(defmacro try [exprs]
-  (let [[_ e & body] (last exprs)
+(defmacro try
+  "Solid's `ErrorBoundary` component in Clojure’s `try...catch` syntax
+  ```clojure
+  (s/try
+    ($ my-component {})
+    (catch err
+      ($ error-view {})))
+  ```"
+  [& exprs]
+  (let [[marker e & body] (last exprs)
         children (butlast exprs)]
+    (assert (= 'catch marker) "should have `catch` marker")
     `(-error-boundary (fn [~e] ~@body) ~@children)))
 
 (defmacro batch [& body]
