@@ -1,99 +1,12 @@
 (ns solid.core
   (:refer-clojure :exclude [if when for cond try])
-  (:require
-    [clojure.core :as core]
-    [clojure.string :as str]))
+  (:require [clojure.core :as core]
+            [solid.compiler :as sc]))
 
 (defmacro defui [sym [props] & body]
   `(defn ~sym [props#]
      (let [~(or props (gensym "props")) (solid.core/-props props#)]
        ~@body)))
-
-(defmulti to-js
-          (fn [x]
-            (core/cond
-              (map? x) :map
-              (vector? x) :vector
-              (keyword? x) :keyword
-              :else (class x))))
-
-(defn- to-js-map [m shallow?]
-  (core/cond
-    (nil? m) nil
-    (empty? m) `(cljs.core/js-obj)
-    :else (let [kvs-str (->> (mapv to-js (keys m))
-                             (mapv #(-> (str \' % "':~{}")))
-                             (interpose ",")
-                             (apply str))]
-            (vary-meta
-              (list* 'js* (str "{" kvs-str "}")
-                     (if shallow?
-                       (vals m)
-                       (mapv to-js (vals m))))
-              assoc :tag 'object))))
-
-(defmethod to-js :keyword [x] (name x))
-
-(defmethod to-js :map [m] (to-js-map m false))
-
-(defmethod to-js :vector [xs]
-  (apply list 'cljs.core/array (mapv to-js xs)))
-
-(defmethod to-js :default [x] x)
-
-(defn- camel-case-dom
-  "Turns kebab-case keyword into camel-case keyword,
-  kebab-cased DOM attributes aria-* and data-* are not converted"
-  [k]
-  (if (keyword? k)
-    (let [[first-word & words] (str/split (name k) #"-")]
-      (if (or (empty? words)
-              (= "aria" first-word)
-              (= "data" first-word))
-        k
-        (-> (map str/capitalize words)
-            (conj first-word)
-            str/join
-            keyword)))
-    k))
-
-(defn- camel-case-keys
-  "Takes map of attributes and returns same map with camel-cased keys"
-  [m]
-  (if (map? m)
-    (reduce-kv #(assoc %1 (camel-case-dom %2) %3) {} m)
-    m))
-
-(defn- compile-class [attrs]
-  (if (map? (:class attrs))
-    (let [class-list (reduce-kv #(assoc %1 %2 `(fn [] ~%3))
-                                {} (:class attrs))]
-      (-> attrs
-          (dissoc :class)
-          (assoc :class-list class-list)))
-    attrs))
-
-(defn- compile-directives [attrs]
-  (let [ref (:ref attrs)
-        directives (filterv (fn [[k _]] (symbol? k)) attrs)]
-    (-> (into {} (filter (fn [[k _]] (not (symbol? k))) attrs))
-        (assoc :ref `(fn [el#]
-                       (let [ref# (or ~ref identity)]
-                         (ref# el#)
-                         (doseq [[f# v#] ~directives]
-                           (f# el# v#))))))))
-
-(defn- compile-attrs [args]
-  (let [[attrs & children] args]
-    (if (map? attrs)
-      (let [attrs (-> attrs
-                      (update :style #(if (map? %) (to-js %) `(solid.core/interpret-style-map ~%)))
-                      compile-directives
-                      compile-class
-                      camel-case-keys
-                      to-js)]
-        (into [attrs] children))
-      args)))
 
 (defn- wrap-children [children]
   (core/for [x children]
@@ -101,27 +14,12 @@
 
 (defmacro $ [tag & args]
   (if (keyword? tag)
-    (let [[attrs & children] (compile-attrs args)]
+    (let [[attrs & children] (sc/compile-attrs args)]
       `(create-element ~(name tag) ~attrs ~@(wrap-children children)))
     (let [[attrs & children] args]
       (if (map? attrs)
         `(create-element ~tag (cljs.core/js-obj "props" ~attrs) ~@(wrap-children children))
         `(create-element ~tag ~@(wrap-children args))))))
-
-(defmacro effect [& body]
-  `(-effect (fn [] ~@body)))
-
-(defmacro on-mount [& body]
-  `(-on-mount (fn [] ~@body)))
-
-(defmacro on-cleanup [& body]
-  `(-on-cleanup (fn [] ~@body)))
-
-(defmacro on-error [args & body]
-  `(-on-cleanup (fn ~args ~@body)))
-
-(defmacro memo [& body]
-  `(-memo (fn [] ~@body)))
 
 (defmacro if
   ([test then]
@@ -132,20 +30,42 @@
 (defmacro when [test then]
   `(solid.core/if ~test ~then))
 
-(defmacro for [[[v idx] expr] body]
+(defmacro for
+  "Solid's `For` component in Clojure’s `for` syntax
+  ```clojure
+  (s/for [[x idx] xs]
+    ($ :li x))
+  ```"
+  [[[v idx] expr] body]
   `(-for (fn [] (js/Array.from ~expr))
          (fn [~v idx#]
            (let [~idx (-wrap idx#)]
              ~body))))
 
-(defmacro index [[[v idx] expr] body]
+(defmacro index
+  "Solid's `Index` component in Clojure’s `for` syntax
+  ```clojure
+  (s/index [[x idx] xs]
+    ($ :li @x))
+  ```"
+  [[[v idx] expr] body]
   `(-index (fn [] (js/Array.from ~expr))
            (fn [v# ~idx]
              (let [~v (-wrap v#)]
                ~body))))
 
-(defmacro cond [& pairs]
-  (let [else (last pairs)]
+(defmacro cond
+  "Solid's `Switch` and `Match` components in Clojure’s `cond` syntax
+  ```clojure
+  (s/cond
+    (= x 1) ($ button {})
+    (= y 2) ($ link {})
+    :else ($ text {}))
+  ```"
+  [& pairs]
+  (let [else (last pairs)
+        marker (last (butlast pairs))]
+    (assert (= :else marker) "The fallback condition has to be marked with :else")
     `(-switch ~else
               ~(->> pairs
                     (drop-last 2)
@@ -172,3 +92,6 @@
 
 (defmacro reaction [& body]
   `(-reaction (fn [] ~@body)))
+
+(defmacro lazy [& body]
+  `(-lazy (fn [] ~@body)))
