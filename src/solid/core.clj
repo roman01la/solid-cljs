@@ -37,10 +37,11 @@
     ($ :li x))
   ```"
   [[[v idx] expr] body]
-  `(-for (fn [] (js/Array.from ~expr))
-         (fn [~v idx#]
-           (let [~idx (-wrap idx#)]
-             ~body))))
+  (let [idx (or idx '_)]
+    `(-for (fn [] (js/Array.from ~expr))
+           (fn [~v idx#]
+             (let [~idx (-wrap idx#)]
+               ~body)))))
 
 (defmacro index
   "Solid's `Index` component in Clojure’s `for` syntax
