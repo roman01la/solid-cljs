@@ -96,7 +96,7 @@
                         :grid-template-rows "repeat(5, 1fr)"
                         :gap 1
                         :background-color "#6c6058"}}
-          (s/for [[v idx] buttons]
+          (s/for [[v] buttons]
             ($ button {:on-click #(on-click v)
                        :style {:grid-column (when (= v 0) "span 2")
                                :background-color (cond
