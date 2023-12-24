@@ -17,7 +17,8 @@ solid-cljs wraps SolidJS API documented at [solidjs.com/docs/latest/api](https:/
 (defui app []
    (let [n (s/signal 0)]
      (s/effect
-       (println "n:" @n))
+       (fn []
+         (println "n:" @n)))
      ($ :div
         ($ :button {:on-click #(swap! n inc)} "+")
         @n
