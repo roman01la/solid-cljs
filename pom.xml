@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd" xmlns="http://maven.apache.org/POM/4.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>com.github.roman01la</groupId>
+  <artifactId>solid-cljs</artifactId>
+  <version>0.1.0</version>
+  <name>solid-cljs</name>
+  <licenses>
+    <license>
+      <name>Eclipse Public License - Version 2.0</name>
+      <url>https://www.eclipse.org/legal/epl-2.0/</url>
+    </license>
+  </licenses>
+  <scm>
+    <connection>scm:git:git@github.com:roman01la/solid-cljs.git</connection>
+    <developerConnection>scm:git:git@github.com:roman01la/solid-cljs.git</developerConnection>
+    <tag>77ac0d69550d19874d3b341329b0853bb266d644</tag>
+    <url>https://github.com/roman01la/solid-cljs</url>
+  </scm>
+</project>

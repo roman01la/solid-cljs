@@ -2,5 +2,5 @@
   (:require [cljs.test :refer [run-tests]]
             [solid.core-test]))
 
-(defn ^:export init []
+(defn main [& args]
   (run-tests 'solid.core-test))

@@ -1,4 +1,5 @@
-{:paths ["src" "test"]
- :deps {org.clojure/clojure {:mvn/version "1.11.1"}
-        org.clojure/clojurescript {:mvn/version "1.11.60"}
-        thheller/shadow-cljs {:mvn/version "2.20.20"}}}
+{:aliases
+ {:release {:extra-paths ["dev"]
+            :extra-deps {appliedscience/deps-library {:mvn/version "0.3.4"}
+                         org.apache.maven/maven-model {:mvn/version "3.6.3"}}
+            :main-opts ["-m" "release"]}}}

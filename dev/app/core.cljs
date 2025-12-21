@@ -18,6 +18,7 @@
                    :height 48
                    :display :flex
                    :align-items :center
+                   :justify-content :center
                    :position :relative
                    :box-shadow "0 1px 2px rgba(0, 0, 0, 0.1)"}}
      "solid-cljs playground"))
@@ -25,6 +26,9 @@
 (defui canvas [{:keys [children]}]
   ($ :div
      {:style {:flex 1
+              :display :flex
+              :align-items :center
+              :justify-content :center
               :background-color "#f0f0f0"
               :padding 16}}
      children))

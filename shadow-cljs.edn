@@ -1,10 +1,9 @@
-{:deps true
- :dev-http {3000 "public"}
+{:dev-http {3000 "public"}
+ :source-paths ["src" "test" "dev"]
  :builds {:app {:target :browser
                 :output-dir "public/js"
                 :asset-path "/js"
                 :modules {:main {:entries [app.core]}}}
-          :test {:target :node-test
-                 :output-to "out/test.js"
-                 :ns-regexp "-test$"
-                 :autorun true}}}
+          :test {:target :node-script
+                 :main solid.test-runner/main
+                 :output-to "out/test.js"}}}
