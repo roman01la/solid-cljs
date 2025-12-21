@@ -3,4 +3,8 @@
  :builds {:app {:target :browser
                 :output-dir "public/js"
                 :asset-path "/js"
-                :modules {:main {:entries [app.core]}}}}}
+                :modules {:main {:entries [app.core]}}}
+          :test {:target :node-test
+                 :output-to "out/test.js"
+                 :ns-regexp "-test$"
+                 :autorun true}}}
