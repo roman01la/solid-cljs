@@ -33,3 +33,17 @@ _source in [`src/app/core.cljs`](src/app/core.cljs)_
 1. Install NPM deps `yarn`
 2. Run local build `clojure -M -m shadow.cljs.devtools.cli watch app`
 3. Go to [localhost:3000](htpp://localhost:3000)
+
+## Testing
+
+Run the test suite:
+
+```bash
+yarn test
+```
+
+Or watch tests during development:
+
+```bash
+yarn test:watch
+```
