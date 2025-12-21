@@ -1,6 +1,6 @@
 {
   "name": "solid-cljs",
   "dependencies": {
-    "solid-js": "^1.6.10"
+    "solid-js": "^1.9.10"
   }
 }
