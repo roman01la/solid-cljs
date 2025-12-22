@@ -6,6 +6,21 @@
             ["solid-js/h" :as h]
             [solid.compiler :as sc]))
 
+;; Marker type for reactive prop values
+;; This distinguishes reactive getters from regular callbacks
+(deftype ReactiveProp [getter])
+
+(defn reactive-prop
+  "Wraps a function as a reactive prop getter.
+  Used internally by the $ macro for component props."
+  [f]
+  (->ReactiveProp f))
+
+(defn reactive-prop?
+  "Returns true if x is a reactive prop wrapper."
+  [x]
+  (instance? ReactiveProp x))
+
 (defn create-element [tag & args]
   (when (string? tag) (sc/with-numeric-props (first args)))
   (apply h tag args))
@@ -18,7 +33,7 @@
 
 (defn signal
   ([v]
-   (signal v nil))
+   (signal v =))
   ([v {:keys [equals]}]
    (let [[value set-value] (solid/createSignal v #js {:equals equals})]
      (reify
@@ -97,11 +112,31 @@
 (defn -children [f]
   (solid/children f))
 
+(deftype ReactiveProps [props-map]
+  ILookup
+  (-lookup [this k]
+    (-lookup this k nil))
+  (-lookup [this k not-found]
+    (let [v (get props-map k not-found)]
+      (if (reactive-prop? v)
+        ((.-getter ^ReactiveProp v))  ; Call the reactive getter
+        v)))            ; Pass through as-is (callbacks, literals, etc.)
+  
+  ISeqable
+  (-seq [this]
+    (seq props-map))
+  
+  ICounted
+  (-count [this]
+    (count props-map)))
+
 (defn -props [^js props]
-  (let [clj-props (.-props props)
-        children (-children #(.-children props))]
-    (cond-> clj-props
-            children (assoc :children children))))
+  (when props
+    (let [clj-props (.-props props)
+          children (-children #(.-children props))]
+      (->ReactiveProps
+        (cond-> clj-props
+                children (assoc :children children))))))
 
 (defn -error-boundary [fallback & children]
   (apply h solid/ErrorBoundary
@@ -155,8 +190,8 @@
 (defn use-context [context]
   (solid/useContext context))
 
-(defn render [el node]
-  (sw/render (constantly el) node))
+(defn render [root node]
+  (sw/render root node))
 
 (defn render-to-string [el {:keys [nonce render-id]}]
   (sw/renderToString (fn [] el) #js {:nonce nonce :renderId render-id}))

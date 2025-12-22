@@ -1,11 +1,36 @@
 # solid-cljs
-ClojureScript bindings to Solid. solid-cljs wraps Solid API documented at [docs.solidjs.com](https://docs.solidjs.com/). Compatible with Solid 1.9
+
+[![Clojars Project](https://img.shields.io/clojars/v/com.github.roman01la/solid-cljs.svg)](https://clojars.org/com.github.roman01la/solid-cljs)
+
+ClojureScript bindings to Solid. solid-cljs wraps Solid API documented at [docs.solidjs.com](https://docs.solidjs.com/).
+Compatible with Solid 1.9
 
 _Early alpha, unstable and highly experimental_
 
+## How it works
+
+Solid.js achieves high performance through fine-grained reactivity. Unlike React, Solid doesn't re-render entire components — instead, it updates only the specific DOM nodes that depend on changed values. To make this work, Solid's JSX compiler wraps reactive expressions in functions, creating precise reactive boundaries.
+
+Since ClojureScript doesn't use JSX, solid-cljs provides macros that act as a compiler, automatically wrapping expressions to preserve Solid's fine-grained reactivity. This is why we provide Solid-specific versions of common Clojure macros like `if`, `when`, `or`, `if-let`, `if-some`, `some->`, etc.
+
+**Why not just use Clojure's built-in macros?**
+
+Using standard Clojure macros would break Solid's reactivity model:
+
+```clojure
+;; ❌ Using clojure.core/or - evaluates eagerly, loses reactivity
+($ :h1 (or @title "Default"))
+
+;; ✅ Using s/or - preserves reactive boundaries
+($ :h1 (s/or @title "Default"))
+```
+
+The solid-cljs macros ensure that reactive expressions remain wrapped in functions, so Solid can track dependencies and update only what's necessary. This gives you Solid's performance benefits while writing idiomatic ClojureScript.
+
 ## Installation
+
 1. `npm i solid-js -D`
-2. `{:deps {com.github.roman01la/solid-cljs {:mvn/version "0.1.0"}}}`
+2. `{:deps {com.github.roman01la/solid-cljs {:mvn/version "0.1.1"}}}`
 
 ## Example
 
@@ -29,26 +54,91 @@ _Early alpha, unstable and highly experimental_
 
 Functions and macros below are a part of `solid.core` namespace:
 
-`defui` creates Solid component
+`defui` creates Solid component. Supports docstrings and metadata.
+
 ```clojure
-(defui button [props] ...)
+(defui button
+  "A styled button component."
+  {:private true}
+  [{:keys [on-click children]}]
+  ($ :button {:on-click on-click} children))
 ```
 
 `$` creates Solid element
+
 ```clojure
 ($ button {:on-click #(prn :pressed)} "press")
+```
+
+### Attributes
+
+The `:class` attribute supports multiple formats:
+
+```clojure
+;; String
+{:class "btn primary"}
+
+;; Keyword
+{:class :btn}
+
+;; Vector of classes
+{:class [:btn :btn-primary "active"]}
+
+;; Map for conditional classes
+{:class {:active @is-active?
+         :disabled @is-disabled?}}
 ```
 
 ### Rendering
 
 Conditional rendering with `if` and `when`, via [<Show> component](https://docs.solidjs.com/reference/components/show)
+
 ```clojure
 (s/if test ... ...)
 
 (s/when test ...)
 ```
 
+Conditional rendering with bindings via `if-let` and `when-let`:
+
+```clojure
+(s/if-let [user @current-user]
+  ($ :div "Hello, " (:name user))
+  ($ :div "Please log in"))
+
+(s/when-let [user @current-user]
+  ($ :div "Hello, " (:name user)))
+```
+
+Nil-checking (not falsiness) with `if-some` and `when-some`. Unlike `if-let`, these render for falsy values like `false` or `0`:
+
+```clojure
+(s/if-some [count @item-count]
+  ($ :span count " items")  ;; shows "0 items" when count is 0
+  ($ :span "Loading..."))
+
+(s/when-some [count @item-count]
+  ($ :span count " items"))
+```
+
+Fallback values with `or`:
+
+```clojure
+($ :h1 (s/or @custom-title "Default Title"))
+```
+
+Nil-safe threading with `some->` and `some->>`:
+
+```clojure
+;; Returns nil if any step is nil
+(s/some-> @user :profile :settings :theme)
+
+;; Thread as last argument
+(s/some->> @items (filter :active) first :name)
+```
+
 Conditional rendering with `cond`, via [<Switch> and <Match> components](https://docs.solidjs.com/reference/components/switch-and-match)
+
 ```clojure
 (s/cond
   (= x 1) ($ button {})
@@ -57,37 +147,42 @@ Conditional rendering with `cond`, via [<Switch> and <Match> components](https:/
 ```
 
 List rendering via [`<For>` component](https://docs.solidjs.com/reference/components/for)
+
 ```clojure
 (def xs [1 2 3])
 
-(s/for [[x idx] xs] ;; <- index is added implicitly 
+(s/for [[x idx] xs] ;; <- index is added implicitly
   ($ :li x))
 ```
 
 List rendering via [`<Index>` component](https://docs.solidjs.com/reference/components/index-component)
+
 ```clojure
 (def xs [1 2 3])
 
-(s/index [[x idx] xs] ;; <- index is added implicitly 
+(s/index [[x idx] xs] ;; <- index is added implicitly
   ($ :li @x))
 ```
 
 Catching rendering errors via [<ErrorBoundary> component](https://docs.solidjs.com/reference/components/error-boundary)
+
 ```clojure
 (s/try
   ($ my-component {})
-  (catch err 
+  (catch err
     ($ error-view {})))
 ```
 
 ### Lifecycle
 
 Run the code after initial rendering via [onMount](https://docs.solidjs.com/reference/lifecycle/on-mount)
+
 ```clojure
 (s/on-mount (fn [] (prn :component-mounted)))
 ```
 
 Clean up side effects via [onCleanup](https://docs.solidjs.com/reference/lifecycle/on-cleanup)
+
 ```clojure
 (s/on-cleanup (fn [] (prn :component-unmounted)))
 ```
@@ -95,12 +190,14 @@ Clean up side effects via [onCleanup](https://docs.solidjs.com/reference/lifecyc
 ### Reactive utilities
 
 Create atom-like signal via [createSignal](https://docs.solidjs.com/reference/basic-reactivity/create-signal)
+
 ```clojure
 (let [state (s/signal [])]
   ...)
 ```
 
 Access DOM element via [ref](https://docs.solidjs.com/reference/jsx-attributes/ref)
+
 ```clojure
 (let [ref (s/ref)]
   (s/on-mount (fn [] (js/console.log @ref)))
@@ -108,16 +205,19 @@ Access DOM element via [ref](https://docs.solidjs.com/reference/jsx-attributes/r
 ```
 
 Execute side effects after DOM update via [createEffect](https://docs.solidjs.com/reference/basic-reactivity/create-effect)
+
 ```clojure
 (s/effect (fn [] (prn @value)))
 ```
 
 Execute side effects before DOM update via [createRenderEffect](https://docs.solidjs.com/reference/secondary-primitives/create-render-effect)
+
 ```clojure
 (s/render-effect (fn [] (prn @value)))
 ```
 
 Batching multiple signals updates via [batch](https://docs.solidjs.com/reference/reactive-utilities/batch)
+
 ```clojure
 (s/batch
   (swap! value1 inc)
@@ -125,12 +225,14 @@ Batching multiple signals updates via [batch](https://docs.solidjs.com/reference
 ```
 
 Create reactive computation for side effects, via [createComputed](https://docs.solidjs.com/reference/secondary-primitives/create-computed)
+
 ```clojure
 (s/computed
   (prn @value))
 ```
 
 Separate tracking from re-execution, via [createReaction](https://docs.solidjs.com/reference/secondary-primitives/create-reaction)
+
 ```clojure
 (let [track (s/reaction (prn :update))]
   ;; run the reaction next time `s` changes
@@ -138,6 +240,7 @@ Separate tracking from re-execution, via [createReaction](https://docs.solidjs.c
 ```
 
 Created cached computation via [createMemo](https://docs.solidjs.com/reference/basic-reactivity/create-memo)
+
 ```clojure
 (s/memo (fn [] ...))
 ```
@@ -145,6 +248,7 @@ Created cached computation via [createMemo](https://docs.solidjs.com/reference/b
 ### Store utilities
 
 Create data store via [createStore](https://docs.solidjs.com/reference/store-utilities/create-store)
+
 ```clojure
 (let [[store set-store] (s/store {:value 0})]
   ...)

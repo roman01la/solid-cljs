@@ -1,6 +1,69 @@
 (ns solid.compiler
   (:require [clojure.string :as str]))
 
+(defn literal?
+  "Returns true if the expression is a compile-time literal that cannot be reactive.
+  Literals include: strings, numbers, keywords, nil, booleans."
+  [expr]
+  (or (string? expr)
+      (number? expr)
+      (keyword? expr)
+      (nil? expr)
+      (true? expr)
+      (false? expr)))
+
+(defn- wrap-reactive
+  "Wraps an expression in a function unless it's a literal.
+  This ensures fine-grained reactivity in Solid.js - only the specific
+  attribute will update when signals change, not the entire element.
+  Mirrors the behavior of Solid's JSX compiler."
+  [expr]
+  (if (literal? expr)
+    expr
+    `(fn [] ~expr)))
+
+(defn- wrap-reactive-attrs
+  "Wraps attribute values in functions for fine-grained reactivity.
+  Excludes:
+  - Event handlers (on-* attributes) since they are already functions
+  - :ref attribute since it's handled specially by compile-directives
+  - :style attribute since it has special map handling with its own reactivity
+  - :class attribute since it has special map handling with its own reactivity
+  - Literal values (strings, numbers, keywords, nil, booleans)"
+  [attrs]
+  (if (map? attrs)
+    (reduce-kv
+      (fn [m k v]
+        (let [k-name (if (keyword? k) (name k) (str k))]
+          (assoc m k
+                 (if (or (str/starts-with? k-name "on-")
+                         (= k :ref)
+                         (= k :style)
+                         (= k :class))
+                   v  ; Don't wrap these - they have special handling
+                   (wrap-reactive v)))))
+      {}
+      attrs)
+    attrs))
+
+(defn- wrap-reactive-style-value
+  "Wraps style map values in functions for fine-grained reactivity."
+  [v]
+  (if (literal? v)
+    v
+    `(fn [] ~v)))
+
+(defn- wrap-reactive-style
+  "Wraps values inside a style map for fine-grained reactivity."
+  [style]
+  (if (map? style)
+    (reduce-kv
+      (fn [m k v]
+        (assoc m k (wrap-reactive-style-value v)))
+      {}
+      style)
+    style))
+
 (defmulti to-js
           (fn [x]
             (cond
@@ -57,13 +120,25 @@
     m))
 
 (defn- compile-class [attrs]
-  (if (map? (:class attrs))
-    (let [class-list (reduce-kv #(assoc %1 %2 `(fn [] ~%3))
-                                {} (:class attrs))]
-      (-> attrs
-          (dissoc :class)
-          (assoc :class-list class-list)))
-    attrs))
+  (let [class-val (:class attrs)]
+    (cond
+      ;; Map of class -> boolean expression (conditional classes)
+      (map? class-val)
+      (let [class-list (reduce-kv #(assoc %1 %2 `(fn [] ~%3))
+                                  {} class-val)]
+        (-> attrs
+            (dissoc :class)
+            (assoc :class-list class-list)))
+      
+      ;; Vector of class names: [:foo :bar "baz"] -> "foo bar baz"
+      (vector? class-val)
+      (let [class-str (->> class-val
+                           (map #(if (keyword? %) (name %) (str %)))
+                           (str/join " "))]
+        (assoc attrs :class class-str))
+      
+      ;; Otherwise leave as-is (string, keyword, or expression)
+      :else attrs)))
 
 (defn- compile-directives [attrs]
   (let [ref (:ref attrs)
@@ -79,7 +154,10 @@
   (let [[attrs & children] args]
     (if (map? attrs)
       (let [attrs (-> attrs
-                      (update :style #(if (map? %) (to-js %) `(solid.compiler/interpret-style-map ~%)))
+                      wrap-reactive-attrs
+                      (update :style #(if (map? %)
+                                        (to-js (wrap-reactive-style %))
+                                        `(solid.compiler/interpret-style-map ~%)))
                       compile-directives
                       compile-class
                       camel-case-keys
