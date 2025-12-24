@@ -19,9 +19,12 @@
                    :display :flex
                    :align-items :center
                    :justify-content :center
-                   :position :relative
-                   :box-shadow "0 1px 2px rgba(0, 0, 0, 0.1)"}}
-     "solid-cljs playground"))
+                   :position :relative}}
+     ($ :div {:style {:box-shadow "0 1px 2px rgba(0, 0, 0, 0.1)"
+                      :padding "8px 16px"
+                      :background "#fff"
+                      :border-radius 16}}
+       "solid-cljs playground")))
 
 (def buttons
   ["AC" "+-" "%" "/"
@@ -167,7 +170,8 @@
       :stroke "currentColor"
       :stroke-width width
       :stroke-linecap "round"
-      :transform rotate
+      ;; call rotate here for fine-grained reactivity
+      :transform (rotate)
       :class class}))
 
 (defui lines
@@ -176,7 +180,7 @@
   (let [rotate (fn [index]
                  (str "rotate(" (/ (* 360 index) number-of-lines) ")"))]
     (s/for [[_ idx] (range number-of-lines)]
-      ($ hand {:rotate (rotate @idx)
+      ($ hand {:rotate #(rotate @idx)
                :class class
                :length length
                :width width
@@ -194,11 +198,10 @@
                     :stroke "currentColor"})
         ($ lines {:number-of-lines 60 :class "subsecond" :length 2 :width 1})
         ($ lines {:number-of-lines 12 :class "hour" :length 5 :width 2})
-        ;; Dynamic hands - call functions here for fine-grained reactivity
-        ($ hand {:rotate (subsecond) :class "subsecond" :length 85 :width 5})
-        ($ hand {:rotate (hour) :class "hour" :length 50 :width 4})
-        ($ hand {:rotate (minute) :class "minute" :length 70 :width 3})
-        ($ hand {:rotate (second) :class "second" :length 80 :width 2}))))
+        ($ hand {:rotate subsecond :class "subsecond" :length 85 :width 5})
+        ($ hand {:rotate hour :class "hour" :length 50 :width 4})
+        ($ hand {:rotate minute :class "minute" :length 70 :width 3})
+        ($ hand {:rotate second :class "second" :length 80 :width 2}))))
 
 (defui clock
   "Animated analog clock."
@@ -219,7 +222,7 @@
     
     (s/on-cleanup dispose)
     
-    ($ :div {:class "clock"}
+    ($ :div {:class "clock" :style {:max-width 480}}
        ;; Pass functions, not their results - reactivity happens at the leaf
        ($ clock-face {:hour hour
                       :minute minute
@@ -234,28 +237,30 @@
 
 (defui sidebar [{:keys [example]}]
   ($ :aside {:style {:max-width 240
-                     :padding 16}}
+                     :padding 16
+                     :position :absolute}}
      ($ :ul {:style {:list-style :none
-                     :padding 0
-                     :margin 0}}
+                     :padding "6px 12px"
+                     :margin 0
+                     :background "#fff"
+                     :border-radius 12
+                     :box-shadow "0 1px 2px rgba(0, 0, 0, 0.1)"}}
         (s/for [[item _] (keys examples)]
-          ($ :li {:style {:padding 8
-                          :cursor :pointer}
-                  :on-click #(reset! example item)}
+          ($ :li.menu-item {:style {:padding 8
+                                    :cursor :pointer}
+                            :on-click #(reset! example item)}
              (name item))))))
 
 (defui canvas [{:keys [example children]}]
   ($ :div
      {:style {:flex 1
-              :display :flex
-              :background-color "#f0f0f0"}}
+              :display :flex}}
      ($ sidebar {:example example})
      ($ :div
         {:style {:flex 1
                  :display :flex
                  :align-items :center
                  :justify-content :center
-                 :background-color "#f0f0f0"
                  :padding 16}}
         children)))
 
@@ -264,7 +269,8 @@
     ($ :div {:style {:flex 1
                      :font "normal 14px Inter, sans-serif"
                      :display :flex
-                     :flex-direction :column}}
+                     :flex-direction :column
+                     :background-color "#f0f0f0"}}
        ($ tool-bar)
        ($ canvas {:example example}
           ($ (examples @example))))))

@@ -6,12 +6,13 @@
 (defn- literal?
   "Returns true if the expression is a compile-time literal."
   [x]
-  (or (string? x)
-      (number? x)
-      (keyword? x)
-      (nil? x)
-      (true? x)
-      (false? x)))
+  (core/or
+    (string? x)
+    (number? x)
+    (keyword? x)
+    (nil? x)
+    (true? x)
+    (false? x)))
 
 (defmacro defui
   "Defines a Solid UI component. Supports docstrings and metadata.
@@ -33,11 +34,11 @@
                           [nil args])
         [params & body] args
         props (first params)
-        meta-map (cond-> {}
+        meta-map (core/cond-> {}
                    docstring (assoc :doc docstring)
                    attr-map (merge attr-map))]
     `(defn ~(with-meta sym meta-map) [props#]
-       (let [~(or props (gensym "props")) (solid.core/-props props#)]
+       (let [~(core/or props (gensym "props")) (solid.core/-props props#)]
          ~@body))))
 
 (defn- wrap-children [children]
@@ -51,7 +52,7 @@
   [x]
   (and (seq? x)
        (let [head (first x)]
-         (or (= head 'fn)
+         (core/or (= head 'fn)
              (= head 'fn*)))))
 
 (defn- wrap-component-props
@@ -64,7 +65,7 @@
     (reduce-kv
       (fn [m k v]
         (assoc m k
-               (cond
+               (core/cond
                  ;; Literals don't need wrapping
                  (sc/literal? v) v
                  ;; Function forms are callbacks, don't wrap
@@ -217,7 +218,7 @@
     ($ :li x))
   ```"
   [[[v idx] expr] body]
-  (let [idx (or idx (gensym "_"))]
+  (let [idx (core/or idx (gensym "_"))]
     `(-for (js/Array.from ~expr)
            (fn [~v idx#]
              (let [~idx (-wrap idx#)]
