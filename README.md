@@ -41,7 +41,7 @@ The solid-cljs macros ensure that reactive expressions remain wrapped in functio
 (defui app []
   (let [value (s/signal 0)]
     (s/effect
-      (println "value:" @value))
+      #(println "value:" @value))
     ($ :div
       ($ :button {:on-click #(swap! value inc)} "+")
       @value
