@@ -1,7 +1,8 @@
 (ns solid.core
   (:refer-clojure :exclude [if when for cond case try if-let when-let if-some when-some or some-> some->>])
   (:require [clojure.core :as core]
-            [solid.compiler :as sc]))
+            [solid.compiler :as sc]
+            [solid.lint :as lint]))
 
 (defn- literal?
   "Returns true if the expression is a compile-time literal."
@@ -37,6 +38,8 @@
         meta-map (core/cond-> {}
                    docstring (assoc :doc docstring)
                    attr-map (merge attr-map))]
+    ;; Lint the component body for reactivity issues
+    (lint/lint-component-body! sym body &env)
     `(defn ~(with-meta sym meta-map) [props#]
        (let [~(core/or props (gensym "props")) (solid.core/-props props#)]
          ~@body))))
@@ -81,6 +84,9 @@
     (if (= tag :<>)
       (wrap-children args)
       (let [[attrs & children] (sc/compile-attrs args)]
+        ;; Lint element attributes for reactivity issues
+        (core/when (map? (first args))
+          (lint/lint-element-attrs! tag (first args) &env))
         `(create-element ~(name tag) ~attrs ~@(wrap-children children))))
     (let [[attrs & children] args]
       (if (map? attrs)
@@ -291,9 +297,11 @@
   `(-batch (fn [] ~@body)))
 
 (defmacro computed [& body]
+  (lint/lint-effect-body! 'computed body &env)
   `(-computed (fn [] ~@body)))
 
 (defmacro reaction [& body]
+  (lint/lint-effect-body! 'reaction body &env)
   `(-reaction (fn [] ~@body)))
 
 (defmacro lazy [& body]
