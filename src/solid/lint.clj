@@ -196,7 +196,7 @@
                 (println (str "[solid-cljs WARNING] " (name type)))
                 (println (str "  " (ana/error-message type error)))
                 (when-let [{:keys [line column]} loc]
-                  (println (str "  at line " line ", column " column))))))))))))
+                  (println (str "  at line " line ", column " column)))))))))))
 
 ;; -----------------------------------------------------------------------------
 ;; Lint Rules
