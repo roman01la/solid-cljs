@@ -7,4 +7,5 @@ node_modules
 .shadow-cljs
 *.iml
 public/js/*
+public/report.html
 out/

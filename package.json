@@ -3,7 +3,9 @@
   "scripts": {
     "test": "shadow-cljs compile test && node out/test.js",
     "test:watch": "shadow-cljs watch test",
-    "example": "shadow-cljs watch app"
+    "example": "shadow-cljs watch app",
+    "release": "shadow-cljs release app",
+    "build-report": "shadow-cljs run shadow.cljs.build-report app public/report.html"
   },
   "dependencies": {
     "solid-js": "^1.9.10"
