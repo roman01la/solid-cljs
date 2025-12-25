@@ -158,6 +158,25 @@
 (defn store [v]
   (store/createStore v))
 
+(defn external-store [subscribe get-snapshot]
+  (let [s (signal (get-snapshot))]
+    (render-effect
+      (fn []
+        (let [unsub (subscribe (fn []
+                                 (let [value (get-snapshot)]
+                                   (-batch #(reset! s value)))))]
+          (on-cleanup unsub))))
+    s))
+
+(defn atom-signal [ref]
+  (external-store (fn [f]
+                    (let [key (+ (Math/random) (.now js/Date))]
+                      (add-watch ref key (fn [_ _ o n]
+                                           (when (not= o n)
+                                             (f))))
+                      #(remove-watch ref key)))
+                  #(deref ref)))
+
 (defn deferred
   ([f]
    (deferred f nil))

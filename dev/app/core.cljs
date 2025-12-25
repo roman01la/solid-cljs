@@ -41,35 +41,35 @@
         (js/parseFloat (str/join b) 10)))
     #""))
 
+(defonce calculator-state
+  (atom {:value []
+         :pvalue []
+         :op nil}))
+
 (defui calculator []
-  (let [value (s/signal [])
-        pvalue (s/signal [])
-        op (s/signal nil)
-        pick (fn []
-               (if @op
-                 pvalue
-                 value))
+  (let [state (s/atom-signal calculator-state)
         on-click (fn [v]
-                   (cond
-                     (number? v) (swap! (pick) conj v)
-                     (= "," v) (swap! (pick) conj v)
-                     (= "AC" v) (do (reset! value [])
-                                    (reset! pvalue [])
-                                    (reset! op nil))
-                     (= "+-" v) (swap! (pick) update 0 -)
-                     (= "=" v) (do (reset! value (case @op
-                                                   "/" (exe / @value @pvalue)
-                                                   "*" (exe * @value @pvalue)
-                                                   "-" (exe - @value @pvalue)
-                                                   "+" (exe + @value @pvalue)))
-                                   (reset! pvalue [])
-                                   (reset! op nil))
-                     (= "%" v) (do (reset! value (exe (fn [a b]
-                                                        (* (/ a 100) b))
-                                                      @value @pvalue))
-                                   (reset! pvalue [])
-                                   (reset! op nil))
-                     (#{"/" "*" "-" "+"} v) (reset! op v)))]
+                   (let [{:keys [op value pvalue]} @state
+                         key (if op :pvalue :value)]
+                     (cond
+                       (number? v) (swap! calculator-state update key conj v)
+                       (= "," v) (swap! calculator-state update key conj v)
+                       (= "AC" v) (reset! calculator-state {:value [] :pvalue [] :op nil})
+                       (= "+-" v) (swap! calculator-state update-in update [key 0] -)
+                       (= "=" v) (reset! calculator-state
+                                         {:op nil
+                                          :pvalue []
+                                          :value (case op
+                                                   "/" (exe / value pvalue)
+                                                   "*" (exe * value pvalue)
+                                                   "-" (exe - value pvalue)
+                                                   "+" (exe + value pvalue))})
+                       (= "%" v) (reset! calculator-state {:value (exe (fn [a b]
+                                                                         (* (/ a 100) b))
+                                                                       value pvalue)
+                                                           :pvalue []
+                                                           :op nil})
+                       (#{"/" "*" "-" "+"} v) (swap! calculator-state assoc :op v))))]
     ($ :div {:style {:width 240
                      :height 320
                      :box-shadow "0px 1px 6px rgba(0, 0, 0, 0.3)"
@@ -84,9 +84,11 @@
                         :line-height 32
                         :text-align :right
                         :align-items :center}}
-          (if (seq @(pick))
-            (str/join @(pick))
-            0))
+          (let [{:keys [op value pvalue]} @state
+                vs (if op pvalue value)]
+            (if (seq vs)
+              (str/join vs)
+              0)))
        ($ :div {:style {:flex 1
                         :display :grid
                         :grid-template-columns "repeat(4, 1fr)"
