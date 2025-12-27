@@ -1,7 +1,7 @@
 {
   "name": "solid-cljs",
   "scripts": {
-    "test": "shadow-cljs compile test && node out/test.js",
+    "test": "shadow-cljs compile test && node -C browser out/test.js",
     "test:watch": "shadow-cljs watch test",
     "example": "shadow-cljs watch app",
     "release": "shadow-cljs release app",
