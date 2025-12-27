@@ -90,8 +90,7 @@
 
 (deftest server?-test
   (testing "isServer check"
-    (let [result (s/server?)]
-      (is (boolean? result) "server? should return a boolean"))))
+    (is (boolean? s/server?) "server? should return a boolean")))
 
 (deftest dev?-test
   (testing "DEV check"
@@ -219,4 +218,5 @@
   (testing "deferred value"
     (let [sig (s/signal 5)
           deferred-val (s/deferred #(* 2 @sig))]
-      (is (fn? deferred-val) "deferred should return a function"))))
+      (is (= (deferred-val) 10) "deferred should return the correct calculation"))))
+

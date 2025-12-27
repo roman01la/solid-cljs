@@ -57,9 +57,9 @@
   (let [value (volatile! nil)
         f #(vreset! value %)]
     (specify! f
-      IDeref
-      (-deref [this]
-        @value))))
+              IDeref
+              (-deref [this]
+                      @value))))
 
 (defn effect
   ([f]
@@ -100,11 +100,11 @@
 
 (defn -switch [else pairs]
   (apply h solid/Switch
-     #js {:fallback else}
-     (for [[test then] pairs]
-       (h solid/Match
-          #js {:when test}
-          then))))
+         #js {:fallback else}
+         (for [[test then] pairs]
+           (h solid/Match
+              #js {:when test}
+              then))))
 
 (defn -dynamic [f]
   (h sw/Dynamic #js {:component f}))
@@ -121,11 +121,11 @@
       (if (reactive-prop? v)
         ((.-getter ^ReactiveProp v))  ; Call the reactive getter
         v)))            ; Pass through as-is (callbacks, literals, etc.)
-  
+
   ISeqable
   (-seq [this]
     (seq props-map))
-  
+
   ICounted
   (-count [this]
     (count props-map)))
@@ -136,12 +136,12 @@
           children (-children #(.-children props))]
       (->ReactiveProps
         (cond-> clj-props
-                children (assoc :children children))))))
+          children (assoc :children children))))))
 
 (defn -error-boundary [fallback & children]
   (apply h solid/ErrorBoundary
-     #js {:fallback fallback}
-     children))
+         #js {:fallback fallback}
+         children))
 
 (defn -lazy [f]
   (solid/lazy f))
@@ -232,8 +232,8 @@
 (defn pipe-to [stream res]
   (.pipeTo ^js stream res))
 
-(defn server? []
-  (sw/isServer))
+(def server?
+  sw/isServer)
 
 (defn dev? []
   solid/DEV)
