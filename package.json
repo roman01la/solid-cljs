@@ -5,13 +5,22 @@
     "test:watch": "shadow-cljs watch test",
     "example": "shadow-cljs watch app",
     "release": "shadow-cljs release app",
+    "vitest": "shadow-cljs compile vitest && vitest --browser=chromium",
+    "vitest:watch": "shadow-cljs watch vitest",
+    "module": "shadow-cljs compile module",
     "build-report": "shadow-cljs run shadow.cljs.build-report app public/report.html"
   },
   "dependencies": {
     "solid-js": "^1.9.10"
   },
   "devDependencies": {
-    "shadow-cljs": "^3.3.4"
+    "@solidjs/router": "^0.15.4",
+    "@solidjs/testing-library": "^0.8.10",
+    "@vitest/browser": "^4.0.16",
+    "@vitest/browser-playwright": "^4.0.16",
+    "shadow-cljs": "^3.3.4",
+    "vite-plugin-solid": "^2.11.10",
+    "vitest": "^4.0.16"
   },
   "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e"
 }

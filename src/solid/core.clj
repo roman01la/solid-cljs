@@ -56,7 +56,7 @@
   (and (seq? x)
        (let [head (first x)]
          (core/or (= head 'fn)
-             (= head 'fn*)))))
+                  (= head 'fn*)))))
 
 (defn- wrap-component-props
   "Wraps component prop values in reactive-prop for fine-grained reactivity.
