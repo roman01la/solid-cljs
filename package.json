@@ -7,7 +7,6 @@
     "release": "shadow-cljs release app",
     "vitest": "shadow-cljs compile vitest && vitest --browser=chromium",
     "vitest:watch": "shadow-cljs watch vitest",
-    "module": "shadow-cljs compile module",
     "build-report": "shadow-cljs run shadow.cljs.build-report app public/report.html"
   },
   "dependencies": {
