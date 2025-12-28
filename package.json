@@ -14,10 +14,13 @@
     "solid-js": "^1.9.10"
   },
   "devDependencies": {
+    "@playwright/test": "^1.57.0",
     "@solidjs/router": "^0.15.4",
     "@solidjs/testing-library": "^0.8.10",
     "@vitest/browser": "^4.0.16",
     "@vitest/browser-playwright": "^4.0.16",
+    "@vitest/browser-preview": "^4.0.16",
+    "jsdom": "^27.4.0",
     "shadow-cljs": "^3.3.4",
     "vite-plugin-solid": "^2.11.10",
     "vitest": "^4.0.16"
