@@ -3,7 +3,7 @@
   (:require
     [applied-science.js-interop :as j]
     [solid.core :as s :refer [$ defui]]
-    ["vitest/browser" :refer [page userEvent]]
+    ["vitest/browser" :refer [page]]
     ["@solidjs/testing-library" :as st :refer [render]]
     ["vitest" :refer [expect test]]))
 
@@ -34,3 +34,14 @@
         (.then (fn [] (.click incrementButton)))
         (.then (fn [] (.. expect (element (.. screen (getByText "Count: 1"))) toBeInTheDocument)))))))
 
+(defui label-with-attrs [attrs]
+  ($ :label attrs "the label"))
+
+(test
+  "Component receives map bound to variable",
+  (fn []
+    (j/let [^:js {:keys [baseElement]} (render #($ label-with-attrs {:data-testid "label-with-attrs"}))
+            screen (.. page (elementLocator baseElement))
+            label (.. screen (getByTestId "label-with-attrs"))]
+      (->
+        (.. expect (element (.. label (getByText "the label"))) toBeInTheDocument)))))
