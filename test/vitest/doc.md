@@ -15,8 +15,10 @@ In general:
 ## Other notes:
 
 - Uses the browser to run the tests.
-- Might require installing playwright `npx playwright install`.
-- Docs for vitest start around here: https://main.vitest.dev/guide/browser/#examples
+- Docs for vitest start around here: 
+    * https://main.vitest.dev/guide/browser/#examples
+    * https://main.vitest.dev/guide/browser/component-testing.html#integration-pattern
+        + Vitest uses its own API + a Solid-specific render function
 - Inspiration to avoid JSDOM: 
     * https://www.epicweb.dev/why-i-won-t-use-jsdom
     * https://github.com/jsdom/jsdom/wiki/Don't-stuff-jsdom-globals-onto-the-Node-global
