@@ -1,9 +1,16 @@
 {:dev-http {3000 "public"}
  :source-paths ["src" "test" "dev"]
- :builds {:app {:target :browser
+ :dependencies [[applied-science/js-interop "0.4.2"]]
+ :builds {:app {:target :esm ; can be loaded in < script > with `type="module"`
                 :output-dir "public/js"
                 :asset-path "/js"
-                :modules {:main {:entries [app.core]}}}
+                :modules {:main {:entries [app.core]}}
+                :compiler-options {:reader-features #{:esm}}}
           :test {:target :node-script
                  :main solid.test-runner/main
-                 :output-to "out/test.js"}}}
+                 :output-to "out/test.js"
+                 :compiler-options {:reader-features #{:esm}}}
+          :vitest {:target :esm-files ; https://github.com/thheller/shadow-cljs/blob/master/CHANGELOG.md#22810---2024-06-22
+                   :output-dir "out/vitest"
+                   :ns-regexp "^vitest."
+                   :compiler-options {:reader-features #{:vitest}}}}}
