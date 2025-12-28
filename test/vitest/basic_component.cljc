@@ -1,7 +1,6 @@
 (ns vitest.basic-component
   (:require-macros [solid.core])
   (:require
-    [shadow.cljs.modern :refer (js-await)]
     [applied-science.js-interop :as j]
     [solid.core :as s :refer [$ defui]]
     ["vitest/browser" :refer [page userEvent]]
