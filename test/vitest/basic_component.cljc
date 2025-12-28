@@ -30,10 +30,8 @@
     (j/let [^:js {:keys [baseElement]} (render #($ button-with-signal {:label "Button"}))
             screen (.. page (elementLocator baseElement))
             incrementButton (.. screen (getByRole "button"))]
-      (js-await
-        [_ (.. expect (element (.. screen (getByText "Count: 0"))) toBeInTheDocument)]
-        (js-await
-          [_ (.click incrementButton)]
-          (js-await
-            [_ (.. expect (element (.. screen (getByText "Count: 1"))) toBeInTheDocument)]))))))
+      (->
+        (.. expect (element (.. screen (getByText "Count: 0"))) toBeInTheDocument)
+        (.then (fn [] (.click incrementButton)))
+        (.then (fn [] (.. expect (element (.. screen (getByText "Count: 1"))) toBeInTheDocument)))))))
 
