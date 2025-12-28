@@ -3,10 +3,7 @@
   (:require ["solid-js" :as solid]
             ["solid-js/web" :as sw]
             ["solid-js/store" :as store]
-            ;; `solid-js/h`: vitest imports as cjs, but the other builds import as an esm module
-            ;; https://github.com/vitest-dev/vitest/discussions/4233
-            #?@(:vitest [["solid-js/h" :default h]]
-                :esm [["solid-js/h" :as h]])
+            ["solid-js/h/dist/h.js" :default h]
             [solid.compiler :as sc]))
 
 ;; Marker type for reactive prop values
