@@ -64,7 +64,8 @@
   - Literals (strings, numbers, keywords, nil, booleans)
   - Function forms (fn, fn*/#())"
   [props]
-  (if (map? props)
+  (core/cond
+    (map? props)
     (reduce-kv
       (fn [m k v]
         (assoc m k
@@ -77,7 +78,15 @@
                  :else `(solid.core/reactive-prop (fn [] ~v)))))
       {}
       props)
-    props))
+    (vector? props) ;; attribute map is passed bound to a runtime value 
+    `(let [v# (first ~props)]
+       (reduce-kv
+         (fn [m# k# v#]
+           (assoc m# k#
+                  (solid.core/reactive-prop (fn [] v#))))
+         {}
+         v#))
+    :else props))
 
 (defmacro $ [tag & args]
   (if (keyword? tag)
@@ -89,7 +98,7 @@
           (lint/lint-element-attrs! tag (first args) &env))
         `(create-element ~(name tag) ~attrs ~@(wrap-children children))))
     (let [[attrs & children] args]
-      (if (map? attrs)
+      (if ((some-fn map? vector?) attrs)
         `(create-element ~tag (cljs.core/js-obj "props" ~(wrap-component-props attrs)) ~@(wrap-children children))
         `(create-element ~tag ~@(wrap-children args))))))
 

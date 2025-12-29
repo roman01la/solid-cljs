@@ -34,13 +34,16 @@
         (.then (fn [] (.click incrementButton)))
         (.then (fn [] (.. expect (element (.. screen (getByText "Count: 1"))) toBeInTheDocument)))))))
 
-(defui label-with-attrs [attrs]
-  ($ :label attrs "the label"))
+(defui label-with-attrs [{:keys [data-testid children]}  attrs]
+  ($ :label {:data-testid data-testid} children))
 
 (test
-  "Component receives map bound to variable",
+  "Defui component receives map attributes as a runtime variable, wrapped in vector literal",
   (fn []
-    (j/let [^:js {:keys [baseElement]} (render #($ label-with-attrs {:data-testid "label-with-attrs"}))
+    (j/let [title "the label"
+            input ($ :input)
+            attrs {:data-testid "label-with-attrs"}
+            ^:js {:keys [baseElement]} (render #($ label-with-attrs [attrs] title input))
             screen (.. page (elementLocator baseElement))
             label (.. screen (getByTestId "label-with-attrs"))]
       (->
