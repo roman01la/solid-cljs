@@ -77,11 +77,11 @@
   so it must figure out at runtime how to treat the first value"
   ([] [])
   ([maybe-attrs & children]
-   (let [first `(doto (if (map? ~maybe-attrs)
-                        (cljs.core/js-obj
-                          "props"
-                          (solid.compiler/wrap-component-props ~maybe-attrs))
-                        ~(wrap-child-node maybe-attrs)) #(prn "hellooo"))
+   (let [first `(if (map? ~maybe-attrs)
+                  (cljs.core/js-obj
+                    "props"
+                    (solid.compiler/wrap-component-props ~maybe-attrs))
+                  ~(wrap-child-node maybe-attrs))
          rest (wrap-children children)]
      (into [first] rest))))
 

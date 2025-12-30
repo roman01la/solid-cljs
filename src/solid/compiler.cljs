@@ -31,12 +31,15 @@
 
 (defn wrap-component-props
   "Same intention as the compile-time `wrap-component-props`, however this
-  one is meant to expand into runtime values"
+  one is meant to be used at runtime."
   [attrs]
   (reduce-kv
     (fn [m k v]
       (assoc m k
-             (reactive-prop (fn [] v))))
+             (cond
+               (literal? v) v
+               (fn? v) v
+               :else (reactive-prop (fn [] v)))))
     {}
     attrs))
 
