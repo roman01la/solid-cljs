@@ -70,20 +70,6 @@ Functions and macros below are a part of `solid.core` namespace:
 ($ button {:on-click #(prn :pressed)} "press")
 ```
 
-#### Child nodes
-
-```clj
-;; ✅ bound
-(let [title "the label"
-      input ($ :input) ] 
-  ($ :label title input))
-
-;; ✅ or explicit
-  ($ :label "the label" ($ :input)))
-
-;; <label> the label <input> </label>
-```
-
 ### Attributes
 
 The `:class` attribute supports multiple formats:
@@ -102,36 +88,23 @@ The `:class` attribute supports multiple formats:
 {:class {:active @is-active?
          :disabled @is-disabled?}}
 ```
-
-#### Bound Attributes
-
-Given a component declared with `defui`:
+#### Passing attributes and child nodes
 
 ```clj
 (defui custom-label [{:keys [input-name children]}  attrs]
   ($ :label {:for input-name} children))
-```
 
-It would be called like this:
-
-```clj
+;; ✅ Pass the attribute map as a literal
 ($ custom-label {:input-name "my-input"} "the label title")
-```
 
-However, to pass bound variables for the `defui` component, 
 
-```clj
-;; ❌ Using a bound variable for attributes, `attrs` is
-;;    indistinguishable from passing multiple child nodes for the `$` macro
 (let [attrs {:input-name "my-input"} 
       children "the label title"] 
-  ($ custom-label attrs children))
-
-;; ✅ Wrapping the attribute variable with a vector, `[attrs]`
-;;    signals the macro that it should be treated as an attribute map
-(let [attrs {:input-name "my-input"} 
-      children "the label title"] 
-  ($ custom-label [attrs] children))
+  ($ :<>                            ;; Fragment component
+    ($ custom-label attrs children) ;; ✅ Pass the attribute map as a bound variable
+    ($ custom-label children)       ;; ✅ Attribute map is optional, it may be elided entirely
+    ($ custom-label)                ;; also valid
+    ($ custom-label attrs)))        ;; also valid
 ```
 
 Do not use bound variables for keyword tags:
@@ -139,12 +112,19 @@ Do not use bound variables for keyword tags:
 ```clj
 ;; ❌ Not supported for keyword tags,
 ;;    Only supported for `defui` tags
-(let [attrs {:class "my-div"} ] 
-  ($ :div [attrs] children))
+(let [attrs {:class "my-div"}
+      title ($ "the label")
+      input ($ :input)] 
+  ($ :label attrs title input))
 
 ;; ✅ Be explicit with a map literal
-($ :div {:class "my-div"} children))
+(let [title ($ "the label")
+      input ($ :input)] 
+  ($ :label {:class "my-label"} title input))
+;; <label class="my-label"> the label <input> </label>
 ```
+
+
 
 ### Rendering
 

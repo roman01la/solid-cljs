@@ -3,6 +3,43 @@
 
 (def ^:private cc-regexp (js/RegExp. "-(\\w)" "g"))
 
+;; Marker type for reactive prop values
+;; This distinguishes reactive getters from regular callbacks
+(deftype ReactiveProp [getter])
+
+(defn reactive-prop
+  "Wraps a function as a reactive prop getter.
+  Used internally by the $ macro for component props."
+  [f]
+  (->ReactiveProp f))
+
+(defn reactive-prop?
+  "Returns true if x is a reactive prop wrapper."
+  [x]
+  (instance? ReactiveProp x))
+
+(defn literal?
+  "Returns true if the expression is a compile-time literal that cannot be reactive.
+  Literals include: strings, numbers, keywords, nil, booleans."
+  [expr]
+  (or (string? expr)
+      (number? expr)
+      (keyword? expr)
+      (nil? expr)
+      (true? expr)
+      (false? expr)))
+
+(defn wrap-component-props
+  "Same intention as the compile-time `wrap-component-props`, however this
+  one is meant to expand into runtime values"
+  [attrs]
+  (reduce-kv
+    (fn [m k v]
+      (assoc m k
+             (reactive-prop (fn [] v))))
+    {}
+    attrs))
+
 (defn- cc-fn [s]
   (str/upper-case (aget s 1)))
 

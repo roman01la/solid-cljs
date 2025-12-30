@@ -4,17 +4,6 @@
             [solid.compiler :as sc]
             [solid.lint :as lint]))
 
-(defn- literal?
-  "Returns true if the expression is a compile-time literal."
-  [x]
-  (core/or
-    (string? x)
-    (number? x)
-    (keyword? x)
-    (nil? x)
-    (true? x)
-    (false? x)))
-
 (defmacro defui
   "Defines a Solid UI component. Supports docstrings and metadata.
   
@@ -44,11 +33,14 @@
        (let [~(core/or props (gensym "props")) (solid.core/-props props#)]
          ~@body))))
 
+(defn- wrap-child-node [node]
+  (if (sc/literal? node)
+    node  ; Don't wrap literals - they can't be reactive
+    `(fn [] ~node)))
+
 (defn- wrap-children [children]
   (core/for [x children]
-    (if (literal? x)
-      x  ; Don't wrap literals - they can't be reactive
-      `(fn [] ~x))))
+    (wrap-child-node x)))
 
 (defn- fn-form?
   "Returns true if the expression is a function literal (fn or fn*)."
@@ -64,8 +56,7 @@
   - Literals (strings, numbers, keywords, nil, booleans)
   - Function forms (fn, fn*/#())"
   [props]
-  (core/cond
-    (map? props)
+  (if (map? props)
     (reduce-kv
       (fn [m k v]
         (assoc m k
@@ -75,18 +66,24 @@
                  ;; Function forms are callbacks, don't wrap
                  (fn-form? v) v
                  ;; Everything else gets wrapped in reactive-prop
-                 :else `(solid.core/reactive-prop (fn [] ~v)))))
+                 :else `(solid.compiler/reactive-prop (fn [] ~v)))))
       {}
       props)
-    (vector? props) ;; attribute map is passed bound to a runtime value 
-    `(let [v# (first ~props)]
-       (reduce-kv
-         (fn [m# k# v#]
-           (assoc m# k#
-                  (solid.core/reactive-prop (fn [] v#))))
-         {}
-         v#))
-    :else props))
+    props))
+
+(defn wrap-props-or-children
+  "Similar to `wrap-component-props`, this one considers that 
+  the first value might be a prop map, or might be a child node,
+  so it must figure out at runtime how to treat the first value"
+  ([] [])
+  ([maybe-attrs & children]
+   (let [first `(doto (if (map? ~maybe-attrs)
+                        (cljs.core/js-obj
+                          "props"
+                          (solid.compiler/wrap-component-props ~maybe-attrs))
+                        ~(wrap-child-node maybe-attrs)) #(prn "hellooo"))
+         rest (wrap-children children)]
+     (into [first] rest))))
 
 (defmacro $ [tag & args]
   (if (keyword? tag)
@@ -98,9 +95,9 @@
           (lint/lint-element-attrs! tag (first args) &env))
         `(create-element ~(name tag) ~attrs ~@(wrap-children children))))
     (let [[attrs & children] args]
-      (if ((some-fn map? vector?) attrs)
+      (if (map? attrs)
         `(create-element ~tag (cljs.core/js-obj "props" ~(wrap-component-props attrs)) ~@(wrap-children children))
-        `(create-element ~tag ~@(wrap-children args))))))
+        `(create-element ~tag ~@(apply wrap-props-or-children args))))))
 
 (defmacro if
   ([test then]

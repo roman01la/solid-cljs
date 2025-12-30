@@ -6,21 +6,6 @@
             ["solid-js/h/dist/h.js" :default h]
             [solid.compiler :as sc]))
 
-;; Marker type for reactive prop values
-;; This distinguishes reactive getters from regular callbacks
-(deftype ReactiveProp [getter])
-
-(defn reactive-prop
-  "Wraps a function as a reactive prop getter.
-  Used internally by the $ macro for component props."
-  [f]
-  (->ReactiveProp f))
-
-(defn reactive-prop?
-  "Returns true if x is a reactive prop wrapper."
-  [x]
-  (instance? ReactiveProp x))
-
 (defn create-element [tag & args]
   (when (string? tag) (sc/with-numeric-props (first args)))
   (apply h tag args))
@@ -118,7 +103,7 @@
     (-lookup this k nil))
   (-lookup [this k not-found]
     (let [v (get props-map k not-found)]
-      (if (reactive-prop? v)
+      (if (sc/reactive-prop? v)
         ((.-getter ^ReactiveProp v))  ; Call the reactive getter
         v)))            ; Pass through as-is (callbacks, literals, etc.)
 
