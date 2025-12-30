@@ -66,7 +66,7 @@
                  ;; Function forms are callbacks, don't wrap
                  (fn-form? v) v
                  ;; Everything else gets wrapped in reactive-prop
-                 :else `(solid.compiler/reactive-prop (fn [] ~v)))))
+                 :else `(solid.core/reactive-prop (fn [] ~v)))))
       {}
       props)
     props))
@@ -80,7 +80,7 @@
    (let [first `(if (map? ~maybe-attrs)
                   (cljs.core/js-obj
                     "props"
-                    (solid.compiler/wrap-component-props ~maybe-attrs))
+                    ~maybe-attrs)
                   ~(wrap-child-node maybe-attrs))
          rest (wrap-children children)]
      (into [first] rest))))

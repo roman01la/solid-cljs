@@ -72,11 +72,12 @@
 (defui button-with-reactive-prop [{:keys [label sig unique-id]}]
   ($ :label label
      ($ :button {:on-click #(swap! sig + 1)
+                 :reactive-prop @sig
                  :data-testid unique-id}
         unique-id "Count: " @sig)))
 
 (test
-  "Component signal updates on user event",
+  "Component receives signal as prop and updates accordingly",
   (fn []
     (j/let [sig (s/signal 0)
             unique-id (s/uid)
