@@ -9,6 +9,8 @@ export default defineConfig({
       // relies on the config at shadow-cljs.edn, which outputs these files
       './out/vitest/vitest.*.js',
     ],
+    // testTimeout default is between 5 to 15 seconds, but keeping it low might be productive:
+    testTimeout: 1_000, // https://vitest.dev/config/testtimeout.html
     browser: {
       provider: playwright(),
       enabled: true,

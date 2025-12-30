@@ -88,6 +88,43 @@ The `:class` attribute supports multiple formats:
 {:class {:active @is-active?
          :disabled @is-disabled?}}
 ```
+#### Passing attributes and child nodes
+
+```clj
+(defui custom-label [{:keys [input-name children]}  attrs]
+  ($ :label {:for input-name} children))
+
+;; ✅ Pass the attribute map as a literal
+($ custom-label {:input-name "my-input"} "the label title")
+
+
+(let [attrs {:input-name "my-input"} 
+      children "the label title"] 
+  ($ :<>                            ;; Fragment component
+    ($ custom-label attrs children) ;; ✅ Pass the attribute map as a bound variable
+    ($ custom-label children)       ;; ✅ Attribute map is optional, it may be elided entirely
+    ($ custom-label)                ;; also valid
+    ($ custom-label attrs)))        ;; also valid
+```
+
+Do not use bound variables for keyword tags:
+
+```clj
+;; ❌ Not supported for keyword tags,
+;;    Only supported for `defui` tags
+(let [attrs {:class "my-div"}
+      title ($ "the label")
+      input ($ :input)] 
+  ($ :label attrs title input))
+
+;; ✅ Be explicit with a map literal
+(let [title ($ "the label")
+      input ($ :input)] 
+  ($ :label {:class "my-label"} title input))
+;; <label class="my-label"> the label <input> </label>
+```
+
+
 
 ### Rendering
 
